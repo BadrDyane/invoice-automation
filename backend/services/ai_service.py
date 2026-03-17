@@ -1,4 +1,4 @@
-from openai import OpenAI
+import requests
 import json
 import logging
 from config import settings
@@ -32,19 +32,32 @@ Invoice text:
 
 class AIExtractionService:
     def __init__(self):
-        self.client = OpenAI(api_key=settings.OPENAI_API_KEY)
+        self.api_key = settings.OPENAI_API_KEY
+        self.url = "https://api.openai.com/v1/chat/completions"
 
     def extract_invoice_data(self, raw_text: str) -> dict:
-        response = self.client.chat.completions.create(
-            model="gpt-4o-mini",  # cheapest model, perfect for extraction
-            messages=[
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        }
+        payload = {
+            "model": "gpt-4o-mini",
+            "max_tokens": 1024,
+            "messages": [
                 {"role": "user", "content": EXTRACTION_PROMPT + raw_text}
-            ],
-            max_tokens=1024
-        )
-        response_text = response.choices[0].message.content.strip()
+            ]
+        }
 
-        # Strip code fences if present
+        response = requests.post(
+            self.url,
+            headers=headers,
+            json=payload,
+            timeout=30
+        )
+        response.raise_for_status()
+
+        response_text = response.json()["choices"][0]["message"]["content"].strip()
+
         if response_text.startswith("```"):
             lines = response_text.split("\n")
             response_text = "\n".join(lines[1:-1])
