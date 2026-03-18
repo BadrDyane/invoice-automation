@@ -1,16 +1,31 @@
 import { useEffect, useState } from "react";
-import { fetchInvoices } from "../api/client";
+import { fetchInvoices, fetchStats, exportCSV } from "../api/client";
 import UploadZone from "../components/UploadZone";
 import InvoiceTable from "../components/InvoiceTable";
+import StatsCards from "../components/StatsCards";
+import VendorChart from "../components/VendorChart";
+import FilterBar from "../components/FilterBar";
 
 export default function Dashboard() {
   const [invoices, setInvoices] = useState([]);
+  const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [status, setStatus] = useState("");
 
   const load = async () => {
     try {
-      const res = await fetchInvoices();
-      setInvoices(res.data);
+      const params = {};
+      if (search) params.vendor = search;
+      if (status) params.status = status;
+
+      const [invRes, statsRes] = await Promise.all([
+        fetchInvoices(params),
+        fetchStats()
+      ]);
+
+      setInvoices(invRes.data);
+      setStats(statsRes.data);
     } catch (err) {
       console.error(err);
     } finally {
@@ -18,11 +33,29 @@ export default function Dashboard() {
     }
   };
 
-  useEffect(() => { load(); }, []);
+  // Reload when search or status filter changes
+  useEffect(() => {
+    load();
+  }, [search, status]);
 
-  // After upload, wait 5 seconds then refresh
   const handleUploadSuccess = () => {
     setTimeout(load, 5000);
+  };
+
+  const handleExport = async () => {
+    try {
+      const res = await exportCSV();
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const a = document.createElement("a");
+      a.href = url;
+      a.setAttribute("download", "invoices.csv");
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Export failed:", err);
+    }
   };
 
   return (
@@ -41,9 +74,16 @@ export default function Dashboard() {
       {/* Upload zone */}
       <UploadZone onUploadSuccess={handleUploadSuccess} />
 
+      {/* Stats cards */}
+      {stats && <StatsCards stats={stats} />}
+
+      {/* Vendor chart — only show if there's data */}
+      {stats?.by_vendor?.length > 0 && (
+        <VendorChart data={stats.by_vendor} />
+      )}
+
       {/* Invoice list */}
       <div style={{
-        marginTop: 32,
         background: "#ffffff",
         border: "1px solid #e5e7eb",
         borderRadius: 12,
@@ -60,8 +100,19 @@ export default function Dashboard() {
             Invoices
           </h2>
           <span style={{ fontSize: 13, color: "#6b7280" }}>
-            {invoices.length} total
+            {invoices.length} result{invoices.length !== 1 ? "s" : ""}
           </span>
+        </div>
+
+        {/* Search, filter and export controls */}
+        <div style={{ padding: "16px 20px", borderBottom: "1px solid #f3f4f6" }}>
+          <FilterBar
+            search={search}
+            setSearch={setSearch}
+            status={status}
+            setStatus={setStatus}
+            onExport={handleExport}
+          />
         </div>
 
         {loading ? (
