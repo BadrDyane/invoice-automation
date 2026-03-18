@@ -1,18 +1,57 @@
+# ==============================
 # Python
+# ==============================
 backend/venv/
 backend/__pycache__/
 backend/**/__pycache__/
-backend/*.pyc
-backend/invoices.db
-backend/uploads/
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
 
-# Environment — NEVER commit your API key
+# ==============================
+# Environment & Secrets
+# ==============================
 backend/.env
+.env
+.env.local
+.env.production
 
-# Node
+# ==============================
+# Database
+# ==============================
+backend/*.db
+backend/*.sqlite
+backend/*.sqlite3
+
+# ==============================
+# Uploaded & Test Files
+# ==============================
+backend/uploads/
+backend/*.pdf
+backend/*.png
+backend/*.jpg
+backend/*.jpeg
+
+# ==============================
+# Node / Frontend
+# ==============================
 frontend/node_modules/
 frontend/dist/
+frontend/.env
+frontend/.env.local
 
-# OS
+# ==============================
+# OS Files
+# ==============================
 .DS_Store
 Thumbs.db
+desktop.ini
+
+# ==============================
+# IDE & Editor
+# ==============================
+.vscode/
+.idea/
+*.suo
+*.user
